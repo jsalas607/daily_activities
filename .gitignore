@@ -19,6 +19,10 @@ dist-ssr
 # Guía de aprendizaje personal (nunca subir al repo)
 EXPLICACION.md
 
+# Variables de entorno (contienen claves secretas)
+.env.local
+.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
