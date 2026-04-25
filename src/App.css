@@ -78,20 +78,33 @@
 
 .app-main {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 30% 70%;
   gap: 20px;
   padding: 24px 32px;
   flex: 1;
   align-items: start;
 }
 
-.bottom-cols {
+.col-left {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.col-right-top {
   display: grid;
-  grid-template-columns: 1fr 400px;
+  grid-template-columns: 30% 70%;
   gap: 20px;
   align-items: start;
 }
 
+/* Clase antigua — mantener por si algo la usa */
 .left-col {
   display: flex;
   flex-direction: column;
@@ -196,6 +209,60 @@
   border-color: var(--primary);
   color: #fff;
 }
+
+/* ── Botón y estados de envío diario ── */
+.btn-submit-day {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-submit-day:hover { background: #4338ca; }
+
+.submit-confirm {
+  margin-top: 12px;
+  background: #fef9c3;
+  border: 1.5px solid #fde047;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.submit-confirm-text {
+  font-size: 0.85rem;
+  color: #713f12;
+  margin: 0;
+}
+
+.submit-confirm-btns {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.submit-done {
+  margin-top: 12px;
+  background: var(--success-light);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #065f46;
+}
+
+.submit-done-icon { font-size: 1.1rem; }
 
 /* ── Week badge ── */
 .week-badge {
@@ -356,6 +423,13 @@
 }
 
 .tracker-item:hover { background: var(--bg); }
+
+/* Día bloqueado (ya enviado) */
+.tracker-item.tracker-locked {
+  cursor: default;
+  opacity: 0.75;
+}
+.tracker-item.tracker-locked:hover { background: transparent; }
 
 .tracker-item.done {
   background: var(--success-light);
@@ -1098,7 +1172,7 @@
     grid-template-columns: 1fr;
     padding: 16px;
   }
-  .bottom-cols {
+  .col-right-top {
     grid-template-columns: 1fr;
   }
   .app-subtitle { display: none; }

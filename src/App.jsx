@@ -9,10 +9,11 @@ import { getTodayKey } from './utils/storage';
 import './App.css';
 
 export default function App() {
-  const [user,       setUser]       = useState(null);
-  const [loading,    setLoading]    = useState(true);
-  const [activities, setActivities] = useState([]);
-  const [records,    setRecords]    = useState({});
+  const [user,        setUser]        = useState(null);
+  const [loading,     setLoading]     = useState(true);
+  const [activities,  setActivities]  = useState([]);
+  const [records,     setRecords]     = useState({});
+  const [submissions, setSubmissions] = useState({});
 
   const todayKey    = getTodayKey();
   const todayRecord = records[todayKey] || {};
@@ -36,9 +37,12 @@ export default function App() {
     if (user) {
       loadActivities();
       loadRecords();
+      loadSubmissions();
+      requestNotificationPermission();
     } else {
       setActivities([]);
       setRecords({});
+      setSubmissions({});
     }
   }, [user]);
 
@@ -53,6 +57,27 @@ export default function App() {
         name:          a.name,
         scheduledDays: a.scheduled_days,
       })));
+    }
+  }
+
+  async function loadSubmissions() {
+    const { data } = await supabase.from('daily_submissions').select('date');
+    if (data) {
+      const subs = {};
+      data.forEach(s => { subs[s.date] = true; });
+      setSubmissions(subs);
+    }
+  }
+
+  function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }
+
+  function showNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '/favicon.ico' });
     }
   }
 
@@ -120,6 +145,49 @@ export default function App() {
     }, { onConflict: 'user_id,activity_id,date' });
   }
 
+  async function submitDay() {
+    if (submissions[todayKey]) return;
+    const { error } = await supabase.from('daily_submissions').insert({
+      user_id: user.id,
+      date:    todayKey,
+    });
+    if (!error) {
+      setSubmissions(prev => ({ ...prev, [todayKey]: true }));
+      showNotification('📬 Registro enviado', 'Tu registro de hoy ha sido guardado. ¡Buen trabajo!');
+    }
+  }
+
+  // ── Timer auto-envío a las 23:59 ───────────────────────────────────────
+  useEffect(() => {
+    if (!user || submissions[todayKey]) return;
+
+    const now         = new Date();
+    const warning     = new Date(); warning.setHours(23, 58, 0, 0);
+    const autoSubmit  = new Date(); autoSubmit.setHours(23, 59, 0, 0);
+
+    const msToWarning    = warning    - now;
+    const msToAutoSubmit = autoSubmit - now;
+
+    let warningTimer, submitTimer;
+
+    if (msToWarning > 0) {
+      warningTimer = setTimeout(() => {
+        showNotification('⏰ Daily Activities', 'Tu registro diario se enviará automáticamente en 1 minuto.');
+      }, msToWarning);
+    }
+
+    if (msToAutoSubmit > 0) {
+      submitTimer = setTimeout(() => {
+        submitDay();
+      }, msToAutoSubmit);
+    }
+
+    return () => {
+      clearTimeout(warningTimer);
+      clearTimeout(submitTimer);
+    };
+  }, [user, submissions[todayKey], todayKey]);
+
   async function handleSignOut() {
     await supabase.auth.signOut();
   }
@@ -168,32 +236,36 @@ export default function App() {
 
       <main className="app-main">
 
-        {/* Mis Actividades — ancho completo */}
-        <ActivityManager
-          activities={activities}
-          onAdd={addActivity}
-          onDelete={deleteActivity}
-          onChangeDays={changeActivityDays}
-        />
-
-        {/* Fila inferior: Calendario | Registro + Progreso */}
-        <div className="bottom-cols">
-          <Calendar
+        {/* Columna izquierda 30% — Mis Actividades */}
+        <div className="col-left">
+          <ActivityManager
             activities={activities}
-            records={records}
+            onAdd={addActivity}
+            onDelete={deleteActivity}
+            onChangeDays={changeActivityDays}
           />
-          <div className="right-col">
+        </div>
+
+        {/* Columna derecha 70% — Registro + Progreso arriba, Calendario abajo */}
+        <div className="col-right">
+          <div className="col-right-top">
             <DailyTracker
               activities={activities}
               todayRecord={todayRecord}
               records={records}
               onToggle={toggleToday}
+              isSubmitted={!!submissions[todayKey]}
+              onSubmit={submitDay}
             />
             <WeeklyProgress
               activities={activities}
               records={records}
             />
           </div>
+          <Calendar
+            activities={activities}
+            records={records}
+          />
         </div>
 
       </main>
